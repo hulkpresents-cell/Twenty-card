@@ -478,7 +478,6 @@
         <span>খেলার উত্তেজনা ধরে রাখতে স্কোরের যোগফল গোপন রাখা হয়েছে। ১৬ রাউন্ড শেষে চূড়ান্ত ফলাফল উন্মোচন হবে।</span>
       </div>
       <div class="round-entry">
-        <!-- added a note to specify multiples of 5 -->
         <div class="section-label">এই রাউন্ডের স্কোর <span class="note-highlight">(শুধুমাত্র ৫ এর গুণিতক)</span></div>
         <div id="entryRows"></div>
         <button class="btn-primary save-round-btn" id="saveRoundBtn" disabled>রাউন্ড সেভ করুন</button>
@@ -500,22 +499,18 @@
 (function(){
   const STORAGE_KEY = 'twenty-game-state-v2';
   const TOTAL_ROUNDS = 16;
-  let state = null; // {players:[{name}], rounds:[{bids:[n,n,n,n], results:[bool,bool,bool,bool]}]}
+  let state = null; 
 
   const $ = id => document.getElementById(id);
 
   // Initialize Web Speech API
   function speak(text) {
     if (!('speechSynthesis' in window)) return;
-    
-    // Cancel any currently playing speech to avoid overlap
     window.speechSynthesis.cancel();
-    
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'bn-BD'; // Bengali Language
-    utterance.rate = 0.95;    // Slightly slower for better pronunciation
+    utterance.lang = 'bn-BD'; 
+    utterance.rate = 0.95;    
     utterance.pitch = 1;
-    
     window.speechSynthesis.speak(utterance);
   }
 
@@ -618,7 +613,6 @@
     for(let i=0;i<4;i++){
       const row = document.createElement('div');
       row.className = 'entry-row row-' + i;
-      // Added step="5" to the input
       row.innerHTML =
         '<div class="entry-name">'+ escapeHtml(names[i]) +'</div>' +
         '<input type="number" inputmode="numeric" class="bid-input" id="bid'+i+'" placeholder="নং" min="0" step="5" />' +
@@ -629,7 +623,6 @@
       wrap.appendChild(row);
     }
 
-    // state for current entry (not saved yet)
     window._entryResults = [null,null,null,null];
 
     wrap.querySelectorAll('.toggle-btn').forEach(btn=>{
@@ -656,13 +649,12 @@
       const v = inputEl.value;
       const num = parseFloat(v);
       
-      // Multiple of 5 checking logic
       const isMultipleOf5 = (num % 5 === 0);
       
       if(v === '' || isNaN(num) || !isMultipleOf5 || window._entryResults[i] === null){
         ready = false;
         if (v !== '' && !isMultipleOf5) {
-            inputEl.classList.add('invalid-input'); // Highlight red if wrong number
+            inputEl.classList.add('invalid-input');
         } else {
             inputEl.classList.remove('invalid-input');
         }
@@ -712,9 +704,10 @@
     saveState();
     render();
     
-    // Announce the first player's turn when game starts
+    // 4th player deals the card, 1st player bids first
+    const dealerName = state.players[3].name;
     const firstPlayerName = state.players[0].name;
-    speak(`${firstPlayerName} এর চাল দিয়ে খেলা শুরু হচ্ছে। শুভকামনা!`);
+    speak(`খেলা শুরু হচ্ছে। কার্ড বন্টন করেছেন ${dealerName}, আর প্রথম চাল ${firstPlayerName} এর। শুভকামনা!`);
   });
 
   $('resetBtn').addEventListener('click', ()=>{
@@ -731,23 +724,17 @@
     const bids = [0,1,2,3].map(i=> parseFloat($('bid'+i).value));
     const results = window._entryResults.slice();
     
-    // Extra validation check before saving
     if(bids.some(b=>isNaN(b) || b % 5 !== 0) || results.some(r=>r===null)) {
         return; 
     }
     
-    // Save data
     state.rounds.push({ bids, results });
     saveState();
-    
-    // Update UI first
     render();
 
-    // Voice Announcements Logic
-    const currentRoundNumber = state.rounds.length; // Count of completed rounds
+    const currentRoundNumber = state.rounds.length;
     
     if (currentRoundNumber === TOTAL_ROUNDS) {
-        // Game Finished
         const scores = computeScores();
         const teamA = scores[0] + scores[2];
         const teamB = scores[1] + scores[3];
@@ -762,14 +749,11 @@
             speak("খেলা শেষ! দুই দলের পয়েন্ট সমান, খেলা ড্র হয়েছে।");
         }
     } else {
-        // Game continues
         let speechText = "";
         
-        // Next player logic (Index: 0, 1, 2, 3 repeats every 4 rounds)
         const nextPlayerIdx = currentRoundNumber % 4;
         const nextPlayerName = state.players[nextPlayerIdx].name;
 
-        // Every 4 rounds, make a funny comment about the trailing team
         if (currentRoundNumber % 4 === 0) {
             const scores = computeScores();
             const teamA = scores[0] + scores[2];
@@ -786,14 +770,11 @@
             }
         }
 
-        // Always announce next player's turn
         speechText += `পরবর্তী চাল, ${nextPlayerName} এর।`;
-
         speak(speechText);
     }
   });
 
-  // Load state on startup
   loadState();
 })();
 </script>
