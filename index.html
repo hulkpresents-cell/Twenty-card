@@ -340,7 +340,7 @@
   }
 
   .hidden{display:none !important;}
-  .top-actions{display:flex;justify-content:space-between;margin-bottom:12px; gap: 8px;}
+  .top-actions{display:flex; flex-wrap:wrap; justify-content:flex-end; margin-bottom:12px; gap: 8px;}
   .icon-btn{
     background: rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:var(--cream);
     font-size:13px;padding:8px 16px;border-radius:999px; backdrop-filter: blur(5px);
@@ -349,6 +349,14 @@
   .icon-btn:hover { background: rgba(255,255,255,0.2); }
   .icon-btn:active { transform: scale(0.95); }
   .history-btn-color { background: linear-gradient(135deg, rgba(6,182,212,0.3), rgba(6,182,212,0.1)); border-color: rgba(6,182,212,0.4); color: #cffafe; }
+  
+  .undo-round-btn {
+      background: linear-gradient(135deg, rgba(251, 113, 133, 0.2), rgba(251, 113, 133, 0.05));
+      border-color: rgba(251, 113, 133, 0.4);
+      color: #fda4af;
+      margin-right: auto; /* Push others to right */
+  }
+  .undo-round-btn:hover { background: rgba(251, 113, 133, 0.3); }
 
   /* progress note during play */
   .veil-note{
@@ -398,7 +406,14 @@
   .match-record {
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 14px; margin-bottom: 12px;
   }
-  .match-time { font-size: 11px; color: var(--cream-dim); text-align: right; margin-bottom: 8px; font-family: 'JetBrains Mono', monospace;}
+  
+  .delete-match-btn {
+      background: rgba(251, 113, 133, 0.1); border: 1px solid rgba(251, 113, 133, 0.3);
+      color: #fb7185; border-radius: 6px; padding: 4px 8px; font-size: 12px; cursor: pointer; transition: all 0.2s;
+  }
+  .delete-match-btn:hover { background: rgba(251, 113, 133, 0.2); }
+
+  .match-time { font-size: 11px; color: var(--cream-dim); font-family: 'JetBrains Mono', monospace;}
   .match-teams { display: flex; justify-content: space-between; align-items: center;}
   .match-team-info { display: flex; flex-direction: column; width: 40%;}
   .match-team-info.right { text-align: right; }
@@ -438,6 +453,8 @@
   <div id="gameScreen" class="hidden">
 
     <div class="top-actions">
+      <!-- Undo Button -->
+      <button class="icon-btn undo-round-btn" id="undoRoundBtn" style="display: none;">↩ আন্ডু (শেষ রাউন্ড)</button>
       <button class="icon-btn history-btn-color" id="openHistoryBtn">📜 ম্যাচ হিস্ট্রি</button>
       <button class="icon-btn" id="resetBtn">↺ নতুন খেলা</button>
     </div>
@@ -538,7 +555,7 @@
 
 <script>
 (function(){
-  const STORAGE_KEY = 'twenty-game-state-v5';
+  const STORAGE_KEY = 'twenty-game-state-v6';
   const MATCH_HISTORY_KEY = 'twenty-match-records';
   const NAMES_HISTORY_KEY = 'twenty-saved-names';
   const TOTAL_ROUNDS = 16;
@@ -674,6 +691,13 @@
     for(let i=0;i<4;i++){ $('name'+i).textContent = names[i]; }
     $('teamAName').textContent = names[0] + ' ও ' + names[2];
     $('teamBName').textContent = names[1] + ' ও ' + names[3];
+    
+    // Show Undo Button if at least 1 round is played
+    if (state.rounds.length > 0) {
+        $('undoRoundBtn').style.display = 'inline-block';
+    } else {
+        $('undoRoundBtn').style.display = 'none';
+    }
 
     if(finished){
       $('subtitle').innerHTML = '<span class="rnd">খেলা শেষ</span> — ফলাফল উন্মোচিত হয়েছে';
@@ -844,6 +868,23 @@
       render();
     }
   });
+  
+  // Game Round Undo Button Logic
+  $('undoRoundBtn').addEventListener('click', ()=>{
+     if(state.rounds.length === 0) return;
+     if(confirm('আপনি কি নিশ্চিত যে সর্বশেষ রাউন্ডটি মুছে ফেলতে চান?')){
+         
+         // If game was finished, it also saved a match history record. We should remove that duplicate auto-save.
+         if (state.rounds.length === TOTAL_ROUNDS) {
+             matchHistory.shift(); 
+             try { localStorage.setItem(MATCH_HISTORY_KEY, JSON.stringify(matchHistory)); } catch(e){}
+         }
+         
+         state.rounds.pop(); // Remove last round
+         saveState();
+         render();
+     }
+  });
 
   $('saveRoundBtn').addEventListener('click', ()=>{
     if(state.rounds.length >= TOTAL_ROUNDS) return;
@@ -946,7 +987,7 @@
       }
       
       let listHTML = '';
-      matchHistory.forEach(m => {
+      matchHistory.forEach((m, idx) => {
           if(m.winner === 1) t1Wins++;
           if(m.winner === 2) t2Wins++;
           
@@ -956,7 +997,10 @@
           
           listHTML += `
           <div class="match-record">
-             <div class="match-time">📅 ${m.time}</div>
+             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                 <div class="match-time" style="margin-bottom:0;">📅 ${m.time}</div>
+                 <button class="delete-match-btn" data-index="${idx}">🗑️ মুছুন</button>
+             </div>
              <div class="match-teams">
                 <div class="match-team-info">
                    <div class="m-team-name" style="color:var(--c0)">${escapeHtml(m.t1Name)}</div>
@@ -976,6 +1020,18 @@
       $('t1Wins').textContent = convertToBanglaDigit(t1Wins);
       $('t2Wins').textContent = convertToBanglaDigit(t2Wins);
       listWrap.innerHTML = listHTML;
+      
+      // Bind Delete History Event
+      document.querySelectorAll('.delete-match-btn').forEach(btn => {
+         btn.addEventListener('click', (e) => {
+            const index = e.target.getAttribute('data-index');
+            if(confirm('আপনি কি নিশ্চিত যে এই রেকর্ডটি হিস্ট্রি থেকে মুছে ফেলতে চান?')){
+                matchHistory.splice(index, 1);
+                try { localStorage.setItem(MATCH_HISTORY_KEY, JSON.stringify(matchHistory)); } catch(err){}
+                renderMatchHistoryModal(); // Re-render modal instantly
+            }
+         });
+      });
   }
 
   loadState();
