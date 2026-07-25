@@ -519,6 +519,20 @@
     window.speechSynthesis.speak(utterance);
   }
 
+  // Funny comments for trailing teams
+  const funnyComments = [
+      "আরে ভাই, খেলছেন নাকি অন্য খেয়ালে আছেন?",
+      "আপনাদের তো মনে হচ্ছে গিয়ার চেঞ্জ করতে হবে!",
+      "কি ব্যাপার! ঘুমাচ্ছেন নাকি? একটু নড়েচড়ে বসুন!",
+      "এইভাবে খেললে তো মান সম্মান থাকবে না!",
+      "আপনাদের তো অবস্থা খারাপ! চা-কফি খেয়ে চাঙ্গা হোন!"
+  ];
+
+  function getRandomFunnyComment(teamName) {
+      const idx = Math.floor(Math.random() * funnyComments.length);
+      return teamName + ", " + funnyComments[idx];
+  }
+
   function defaultState(){
     return { players: [], rounds: [] };
   }
@@ -698,8 +712,9 @@
     saveState();
     render();
     
-    // Initial interaction allows future speech
-    speak("খেলা শুরু হচ্ছে। শুভকামনা!");
+    // Announce the first player's turn when game starts
+    const firstPlayerName = state.players[0].name;
+    speak(`${firstPlayerName} এর চাল দিয়ে খেলা শুরু হচ্ছে। শুভকামনা!`);
   });
 
   $('resetBtn').addEventListener('click', ()=>{
@@ -749,8 +764,12 @@
     } else {
         // Game continues
         let speechText = "";
+        
+        // Next player logic (Index: 0, 1, 2, 3 repeats every 4 rounds)
+        const nextPlayerIdx = currentRoundNumber % 4;
+        const nextPlayerName = state.players[nextPlayerIdx].name;
 
-        // Every 4 rounds, announce trailing message
+        // Every 4 rounds, make a funny comment about the trailing team
         if (currentRoundNumber % 4 === 0) {
             const scores = computeScores();
             const teamA = scores[0] + scores[2];
@@ -759,19 +778,16 @@
             const teamBName = state.players[1].name + " ও " + state.players[3].name;
 
             if (teamA < teamB) {
-                speechText += `${teamAName}, আপনারা ${teamB - teamA} পয়েন্টে পিছিয়ে আছেন। ভালো করে খেলুন! `;
+                speechText += getRandomFunnyComment(teamAName) + " ";
             } else if (teamB < teamA) {
-                speechText += `${teamBName}, আপনারা ${teamA - teamB} পয়েন্টে পিছিয়ে আছেন। ভালো করে খেলুন! `;
+                speechText += getRandomFunnyComment(teamBName) + " ";
             } else {
-                speechText += `${currentRoundNumber} রাউন্ড শেষে দুই দল সমতায় আছেন! হাড্ডাহাড্ডি লড়াই। `;
+                speechText += "দুই দলই সমানে সমান! কেউ কাউকে ছাড় দিচ্ছে না। ";
             }
         }
 
-        // Announce next player whose turn is first
-        const nextPlayerIdx = currentRoundNumber % 4;
-        const nextPlayerName = state.players[nextPlayerIdx].name;
-        
-        speechText += `পরবর্তী রাউন্ড শুরু করবেন, ${nextPlayerName}।`;
+        // Always announce next player's turn
+        speechText += `পরবর্তী চাল, ${nextPlayerName} এর।`;
 
         speak(speechText);
     }
