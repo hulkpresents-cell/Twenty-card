@@ -412,6 +412,10 @@
 </style>
 </head>
 <body>
+
+<!-- Datalist for autocomplete player names -->
+<datalist id="savedPlayerNames"></datalist>
+
 <div class="wrap">
 
   <h1 class="title">টুয়েন্টি স্কোরবোর্ড</h1>
@@ -420,10 +424,11 @@
   <!-- SETUP SCREEN -->
   <div id="setupScreen" class="card">
     <div class="setup-grid">
-      <input class="name-input" id="p0" placeholder="খেলোয়াড় ১ এর নাম (Gold)" />
-      <input class="name-input" id="p1" placeholder="খেলোয়াড় ২ এর নাম (Teal)" />
-      <input class="name-input" id="p2" placeholder="খেলোয়াড় ৩ এর নাম (Red)" />
-      <input class="name-input" id="p3" placeholder="খেলোয়াড় ৪ এর নাম (Purple)" />
+      <!-- Added list="savedPlayerNames" for autocomplete -->
+      <input class="name-input" id="p0" list="savedPlayerNames" autocomplete="off" placeholder="খেলোয়াড় ১ এর নাম (Gold)" />
+      <input class="name-input" id="p1" list="savedPlayerNames" autocomplete="off" placeholder="খেলোয়াড় ২ এর নাম (Teal)" />
+      <input class="name-input" id="p2" list="savedPlayerNames" autocomplete="off" placeholder="খেলোয়াড় ৩ এর নাম (Red)" />
+      <input class="name-input" id="p3" list="savedPlayerNames" autocomplete="off" placeholder="খেলোয়াড় ৪ এর নাম (Purple)" />
     </div>
     <div class="setup-note"><b>পেয়ার:</b> খেলোয়াড় ১ + ৩ একটি পেয়ার, খেলোয়াড় ২ + ৪ আরেকটি পেয়ার। মোট ১৬ রাউন্ড শেষে ফলাফল দেখানো হবে।</div>
     <button class="btn-primary" id="startBtn">খেলা শুরু করুন</button>
@@ -533,14 +538,48 @@
 
 <script>
 (function(){
-  const STORAGE_KEY = 'twenty-game-state-v4';
+  const STORAGE_KEY = 'twenty-game-state-v5';
   const MATCH_HISTORY_KEY = 'twenty-match-records';
+  const NAMES_HISTORY_KEY = 'twenty-saved-names';
   const TOTAL_ROUNDS = 16;
   
   let state = null; 
   let matchHistory = [];
+  let savedNamesList = [];
 
   const $ = id => document.getElementById(id);
+
+  // Load Saved Player Names for Autocomplete
+  function loadSavedNames() {
+      try {
+          const data = localStorage.getItem(NAMES_HISTORY_KEY);
+          if(data) savedNamesList = JSON.parse(data);
+          
+          const dataList = $('savedPlayerNames');
+          dataList.innerHTML = '';
+          savedNamesList.forEach(name => {
+              const opt = document.createElement('option');
+              opt.value = name;
+              dataList.appendChild(opt);
+          });
+      } catch(e) {}
+  }
+
+  function addNamesToHistory(names) {
+      let updated = false;
+      names.forEach(n => {
+          if(n && !savedNamesList.includes(n)) {
+              savedNamesList.push(n);
+              updated = true;
+          }
+      });
+      if(updated) {
+          try {
+              localStorage.setItem(NAMES_HISTORY_KEY, JSON.stringify(savedNamesList));
+              loadSavedNames();
+          } catch(e) {}
+      }
+  }
 
   // Initialize Web Speech API
   function speak(text) {
@@ -553,7 +592,6 @@
     window.speechSynthesis.speak(utterance);
   }
 
-  // Unique and highly funny comments for trailing teams
   const funnyComments = [
       "ভাই, আপনাদের অবস্থা দেখে তো এআই এরও কান্না পাচ্ছে! একটু ফোকাস করেন!",
       "আপনাদের তো মনে হচ্ছে গিয়ার নিউট্রালে আটকে গেছে! জলদি পিকআপ দেন!",
@@ -575,6 +613,7 @@
   }
 
   function loadState(){
+    loadSavedNames(); // Initializing Autocomplete list
     try{
       const data = localStorage.getItem(STORAGE_KEY);
       if(data){
@@ -668,9 +707,10 @@
     for(let i=0;i<4;i++){
       const row = document.createElement('div');
       row.className = 'entry-row row-' + i;
+      // Added value="15" for default bid
       row.innerHTML =
         '<div class="entry-name">'+ escapeHtml(names[i]) +'</div>' +
-        '<input type="number" inputmode="numeric" class="bid-input" id="bid'+i+'" placeholder="নং" min="0" step="5" />' +
+        '<input type="number" inputmode="numeric" class="bid-input" id="bid'+i+'" placeholder="নং" min="0" step="5" value="15" />' +
         '<div class="result-toggle">' +
           '<button type="button" class="toggle-btn win" data-idx="'+i+'" data-val="win">✓ তুলেছে</button>' +
           '<button type="button" class="toggle-btn lose" data-idx="'+i+'" data-val="lose">✗ পারেনি</button>' +
@@ -691,9 +731,25 @@
         updateSaveBtnState();
       });
     });
+
     wrap.querySelectorAll('.bid-input').forEach(inp=>{
-      inp.addEventListener('input', updateSaveBtnState);
+      inp.addEventListener('input', (e) => {
+        updateSaveBtnState();
+        
+        // Auto-focus next input when 2 digits are entered
+        if(e.target.value.length === 2) {
+            const currentIdx = parseInt(e.target.id.replace('bid', ''), 10);
+            if(currentIdx < 3) {
+                const nextInput = $('bid' + (currentIdx + 1));
+                if(nextInput) {
+                    nextInput.focus();
+                    nextInput.select(); // auto select the text so typing directly replaces it
+                }
+            }
+        }
+      });
     });
+    
     updateSaveBtnState();
   }
 
@@ -767,6 +823,10 @@
   $('startBtn').addEventListener('click', ()=>{
     const vals = [0,1,2,3].map(i=>$('p'+i).value.trim());
     const filled = vals.map((v,i)=> v || ('খেলোয়াড় '+(i+1)));
+    
+    // Save new player names to history
+    addNamesToHistory(filled);
+    
     state.players = filled.map(n=>({name:n}));
     state.rounds = [];
     saveState();
