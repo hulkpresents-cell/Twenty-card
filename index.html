@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-<title>টুয়েন্টি স্কোরবোর্ড (Glossy)</title>
+<title>টুয়েন্টি স্কোরবোর্ড (History & Voice)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Hind+Siliguri:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -361,7 +361,7 @@
   }
 
   .hidden{display:none !important;}
-  .top-actions{display:flex;justify-content:flex-end;margin-bottom:12px;}
+  .top-actions{display:flex;justify-content:space-between;margin-bottom:12px; gap: 8px;}
   .icon-btn{
     background: rgba(255,255,255,0.1);
     border:1px solid rgba(255,255,255,0.2);
@@ -370,9 +370,17 @@
     backdrop-filter: blur(5px);
     box-shadow: 0 4px 10px rgba(0,0,0,0.2);
     transition: all 0.2s;
+    cursor: pointer;
+    font-weight: 600;
   }
   .icon-btn:hover { background: rgba(255,255,255,0.2); }
   .icon-btn:active { transform: scale(0.95); }
+  
+  .history-btn-color {
+      background: linear-gradient(135deg, rgba(6,182,212,0.3), rgba(6,182,212,0.1));
+      border-color: rgba(6,182,212,0.4);
+      color: #cffafe;
+  }
 
   /* progress note during play */
   .veil-note{
@@ -401,6 +409,79 @@
     letter-spacing:0.02em;
     text-shadow: 0 4px 20px rgba(245, 158, 11, 0.6);
   }
+
+  /* Match History Modal */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex; justify-content: center; align-items: center;
+    padding: 20px;
+    opacity: 0; visibility: hidden;
+    transition: all 0.3s ease;
+  }
+  .modal-overlay.open {
+    opacity: 1; visibility: visible;
+  }
+  .modal-content {
+    background: var(--bg-glow);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    width: 100%; max-width: 480px;
+    max-height: 85vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.2);
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+  }
+  .modal-overlay.open .modal-content {
+    transform: translateY(0);
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 18px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .modal-header h2 { margin: 0; font-size: 18px; color: #fde047; }
+  .close-modal-btn {
+    background: rgba(255,255,255,0.1); border: none; color: #fff;
+    width: 32px; height: 32px; border-radius: 50%; font-size: 14px;
+    cursor: pointer; display:flex; justify-content:center; align-items:center;
+  }
+  .modal-body {
+    padding: 20px; overflow-y: auto; flex: 1;
+  }
+  
+  .history-summary {
+    background: rgba(0,0,0,0.3); border-radius: 12px; padding: 16px;
+    margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05);
+    text-align: center;
+  }
+  .summary-title { font-size: 13px; color: var(--cream-dim); margin-bottom: 8px; }
+  .summary-stats { display: flex; justify-content: space-around; font-size: 18px; font-weight: 700; }
+  .stat-teamA { color: var(--c0); }
+  .stat-teamB { color: var(--c1); }
+
+  .match-record {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px; padding: 14px; margin-bottom: 12px;
+  }
+  .match-time { font-size: 11px; color: var(--cream-dim); text-align: right; margin-bottom: 8px; font-family: 'JetBrains Mono', monospace;}
+  .match-teams { display: flex; justify-content: space-between; align-items: center;}
+  .match-team-info { display: flex; flex-direction: column; width: 40%;}
+  .match-team-info.right { text-align: right; }
+  .m-team-name { font-size: 12px; color: var(--cream-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .m-team-score { font-size: 20px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+  .m-vs { font-size: 12px; color: rgba(255,255,255,0.3); font-weight: 700;}
+  .winner-text {
+    text-align: center; font-size: 12px; font-weight: 600; margin-top: 10px;
+    padding-top: 10px; border-top: 1px dashed rgba(255,255,255,0.1);
+  }
+  .w-a { color: #34d399; }
+  .w-b { color: #34d399; }
+  .w-draw { color: #cbd5e1; }
 </style>
 </head>
 <body>
@@ -425,6 +506,7 @@
   <div id="gameScreen" class="hidden">
 
     <div class="top-actions">
+      <button class="icon-btn history-btn-color" id="openHistoryBtn">📜 ম্যাচ হিস্ট্রি</button>
       <button class="icon-btn" id="resetBtn">↺ নতুন খেলা</button>
     </div>
 
@@ -492,14 +574,39 @@
     </div>
 
   </div>
+  
+  <!-- Match History Modal -->
+  <div id="matchHistoryModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>অতীত খেলার রেকর্ড</h2>
+        <button class="close-modal-btn" id="closeHistoryBtn">✖</button>
+      </div>
+      <div class="modal-body">
+        <div class="history-summary">
+          <div class="summary-title">সর্বমোট জয়ের পরিসংখ্যান</div>
+          <div class="summary-stats">
+            <div class="stat-teamA">পেয়ার ১: <span id="t1Wins">0</span></div>
+            <div class="stat-teamB">পেয়ার ২: <span id="t2Wins">0</span></div>
+          </div>
+        </div>
+        <div id="matchHistoryList">
+          <!-- JS will populate matches here -->
+        </div>
+      </div>
+    </div>
+  </div>
 
 </div>
 
 <script>
 (function(){
-  const STORAGE_KEY = 'twenty-game-state-v2';
+  const STORAGE_KEY = 'twenty-game-state-v3';
+  const MATCH_HISTORY_KEY = 'twenty-match-records';
   const TOTAL_ROUNDS = 16;
+  
   let state = null; 
+  let matchHistory = [];
 
   const $ = id => document.getElementById(id);
 
@@ -540,8 +647,14 @@
       } else {
         state = defaultState();
       }
+      
+      const historyData = localStorage.getItem(MATCH_HISTORY_KEY);
+      if(historyData){
+        matchHistory = JSON.parse(historyData);
+      }
     }catch(e){
       state = defaultState();
+      matchHistory = [];
     }
     render();
   }
@@ -552,6 +665,13 @@
     }catch(e){
       console.error('Storage save failed', e);
     }
+  }
+  
+  function saveHistoryRecord(matchObj){
+    matchHistory.unshift(matchObj); // add to top
+    try{
+      localStorage.setItem(MATCH_HISTORY_KEY, JSON.stringify(matchHistory));
+    }catch(e){}
   }
 
   function computeScores(){
@@ -695,6 +815,11 @@
     d.textContent = str;
     return d.innerHTML;
   }
+  
+  function convertToBanglaDigit(engNumStr){
+      const banglaDigits = {'0':'০','1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯'};
+      return engNumStr.toString().replace(/[0-9]/g, w => banglaDigits[w]);
+  }
 
   $('startBtn').addEventListener('click', ()=>{
     const vals = [0,1,2,3].map(i=>$('p'+i).value.trim());
@@ -704,10 +829,9 @@
     saveState();
     render();
     
-    // 4th player deals the card, 1st player bids first
-    const dealerName = state.players[3].name;
-    const firstPlayerName = state.players[0].name;
-    speak(`খেলা শুরু হচ্ছে। কার্ড বন্টন করেছেন ${dealerName}, আর প্রথম চাল ${firstPlayerName} এর। শুভকামনা!`);
+    // First turn goes to the LAST person (Index 3 / Player 4)
+    const firstPlayerName = state.players[3].name;
+    speak(`খেলা শুরু হচ্ছে। প্রথম চাল ${firstPlayerName} এর। শুভকামনা!`);
   });
 
   $('resetBtn').addEventListener('click', ()=>{
@@ -740,7 +864,25 @@
         const teamB = scores[1] + scores[3];
         const teamAName = state.players[0].name + " ও " + state.players[2].name;
         const teamBName = state.players[1].name + " ও " + state.players[3].name;
+        
+        let winStatus = 0; // 0=draw, 1=A, 2=B
+        if(teamA > teamB) winStatus = 1;
+        if(teamB > teamA) winStatus = 2;
 
+        // Save to Match History
+        const dateStr = new Date().toLocaleString('bn-BD', {
+            year: 'numeric', month: 'short', day: 'numeric', 
+            hour: 'numeric', minute: 'numeric', hour12: true
+        });
+        
+        saveHistoryRecord({
+           time: convertToBanglaDigit(dateStr),
+           t1Name: teamAName, t1Score: teamA,
+           t2Name: teamBName, t2Score: teamB,
+           winner: winStatus
+        });
+
+        // Speech
         if (teamA > teamB) {
             speak(`খেলা শেষ! ${teamAName}, ${teamA - teamB} পয়েন্টের ব্যবধানে জয়ী হয়েছে। অভিনন্দন!`);
         } else if (teamB > teamA) {
@@ -751,7 +893,12 @@
     } else {
         let speechText = "";
         
-        const nextPlayerIdx = currentRoundNumber % 4;
+        // Next player logic:
+        // Round 1 (1 round done): index = (1+3)%4 = 0 (Player 1)
+        // Round 2 (2 rounds done): index = (2+3)%4 = 1 (Player 2)
+        // Round 3 (3 rounds done): index = (3+3)%4 = 2 (Player 3)
+        // Round 4 (4 rounds done): index = (4+3)%4 = 3 (Player 4)
+        const nextPlayerIdx = (currentRoundNumber + 3) % 4;
         const nextPlayerName = state.players[nextPlayerIdx].name;
 
         if (currentRoundNumber % 4 === 0) {
@@ -774,6 +921,63 @@
         speak(speechText);
     }
   });
+
+  // Match History Modal Logic
+  const historyModal = $('matchHistoryModal');
+  
+  $('openHistoryBtn').addEventListener('click', ()=>{
+      renderMatchHistoryModal();
+      historyModal.classList.add('open');
+  });
+  
+  $('closeHistoryBtn').addEventListener('click', ()=>{
+      historyModal.classList.remove('open');
+  });
+  
+  function renderMatchHistoryModal() {
+      let t1Wins = 0;
+      let t2Wins = 0;
+      
+      const listWrap = $('matchHistoryList');
+      if(matchHistory.length === 0){
+          listWrap.innerHTML = '<div class="empty-hist">কোনো পূর্ববর্তী খেলার রেকর্ড নেই</div>';
+          $('t1Wins').textContent = convertToBanglaDigit(0);
+          $('t2Wins').textContent = convertToBanglaDigit(0);
+          return;
+      }
+      
+      let listHTML = '';
+      matchHistory.forEach(m => {
+          if(m.winner === 1) t1Wins++;
+          if(m.winner === 2) t2Wins++;
+          
+          let wText = '<span class="w-draw">খেলা ড্র হয়েছে</span>';
+          if(m.winner === 1) wText = `<span class="w-a">🏆 জয়ী: ${escapeHtml(m.t1Name)}</span>`;
+          if(m.winner === 2) wText = `<span class="w-b">🏆 জয়ী: ${escapeHtml(m.t2Name)}</span>`;
+          
+          listHTML += `
+          <div class="match-record">
+             <div class="match-time">📅 ${m.time}</div>
+             <div class="match-teams">
+                <div class="match-team-info">
+                   <div class="m-team-name" style="color:var(--c0)">${escapeHtml(m.t1Name)}</div>
+                   <div class="m-team-score">${m.t1Score}</div>
+                </div>
+                <div class="m-vs">VS</div>
+                <div class="match-team-info right">
+                   <div class="m-team-name" style="color:var(--c1)">${escapeHtml(m.t2Name)}</div>
+                   <div class="m-team-score">${m.t2Score}</div>
+                </div>
+             </div>
+             <div class="winner-text">${wText}</div>
+          </div>
+          `;
+      });
+      
+      $('t1Wins').textContent = convertToBanglaDigit(t1Wins);
+      $('t2Wins').textContent = convertToBanglaDigit(t2Wins);
+      listWrap.innerHTML = listHTML;
+  }
 
   loadState();
 })();
